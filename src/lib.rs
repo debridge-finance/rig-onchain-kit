@@ -14,6 +14,9 @@ pub mod dexscreener;
 pub mod reasoning_loop;
 pub mod signer;
 
+#[cfg(feature = "debridge")]
+pub mod debridge;
+
 #[ctor::ctor]
 fn init() {
     dotenv::dotenv().ok();

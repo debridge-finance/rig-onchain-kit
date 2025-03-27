@@ -8,7 +8,7 @@ documentation = "https://docs.listen-rs.com"
 
 [features]
 default = ["http"]
-full = ["http", "solana", "evm"]
+full = ["http", "solana", "evm", "debridge"]
 http = [
   "actix-web",
   "actix-cors",
@@ -26,6 +26,7 @@ solana = [
   "spl-associated-token-account",
 ]
 evm = ["alloy", "uniswap-v3-sdk", "uniswap-sdk-core"]
+debridge = []
 
 [dependencies]
 # Core dependencies
