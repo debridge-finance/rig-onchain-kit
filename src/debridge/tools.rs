@@ -1,6 +1,6 @@
 use anyhow::Result;
 use rig_tool_macro::tool;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use crate::debridge::client::DeBridgeClient;
 
@@ -111,6 +111,36 @@ pub async fn get_debridge_quote(
     ).await?;
     
     Ok(quote)
+}
+
+#[tool(description = "
+Execute a deBridge transaction for cross-chain transfers. This function takes the transaction data 
+obtained from a quote and executes it on the source chain to initiate the cross-chain transfer.
+
+Required Parameters:
+- tx_data: The transaction data from the quote response. This must include 'to', 'data', 'value' (optional), and 'chainId' fields.
+
+The function validates the transaction data format and submits it to the blockchain using the current wallet context.
+It returns the transaction hash that can be used to track the transaction status.
+
+Example:
+```
+execute_debridge_transaction(
+  tx_data: quote.tx
+)
+```
+
+Always ask for confirmation before executing a transaction, as it can move real assets on the blockchain.
+")]
+pub async fn execute_debridge_transaction(
+    tx_data: Value,
+) -> Result<Value> {
+    use crate::debridge::transaction;
+    
+    // Execute the transaction using the current signer context
+    let tx_hash = transaction::execute_debridge_transaction(&tx_data).await?;
+    
+    Ok(json!({ "hash": tx_hash }))
 }
 
 /// Helper function to determine if a token address is a native token

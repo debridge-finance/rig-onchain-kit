@@ -235,6 +235,28 @@ async fn main() -> Result<()> {
     println!("\n=== Tests Completed Successfully ===");
     println!("The deBridge module is working correctly with all parameters!");
     
+    // Example of how to execute a bridge transaction (commented out for safety)
+    println!("\n=== Transaction Execution Example (Commented Code) ===");
+    println!("Below is an example of how you would execute a bridge transaction using SignerContext:");
+    println!(r#"
+    // Extract transaction data from the quote response
+    if let Some(tx) = basic_quote.get("tx") {{
+        println!("Transaction data found, ready to execute");
+        
+        // NEVER execute transactions in an example without explicit confirmation
+        // This code is commented out for safety
+        /*
+        use crate::debridge::tools::execute_debridge_transaction;
+        
+        // Execute the transaction using the current signer context
+        // This will use the wallet that's available in the current context
+        let tx_hash = execute_debridge_transaction(tx.clone()).await?;
+        
+        println!("Transaction executed! Hash: {{:?}}", tx_hash);
+        */
+    }}
+    "#);
+    
     Ok(())
 }
 

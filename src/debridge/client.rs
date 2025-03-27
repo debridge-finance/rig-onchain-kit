@@ -248,9 +248,9 @@ impl DeBridgeClient {
             ("srcChainRefundAddress", user_address.to_string()),
             // Destination chain authority
             ("dstChainOrderAuthorityAddress", dst_recipient.to_string()),
-            // Analytics
+            // Analytics and rate limiting
             ("referralCode", "21064".to_string()),
-            ("deBridgeApp", "GOAT".to_string()),  // Using allowed value
+            ("deBridgeApp", "AI_0".to_string()),
             // Operating expenses
             (
                 "prependOperatingExpenses",
