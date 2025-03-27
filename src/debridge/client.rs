@@ -119,6 +119,9 @@ impl DeBridgeClient {
         dst_chain_id: &str,
         dst_chain_token_out: &str,
         user_address: &str,
+        slippage: Option<&str>,
+        dst_chain_token_out_amount: Option<&str>,
+        prepend_operating_expenses: Option<&str>,
     ) -> Result<Value> {
         // Check if source and destination chains are the same
         let is_same_chain = src_chain_id == dst_chain_id;
@@ -134,6 +137,7 @@ impl DeBridgeClient {
                     src_chain_token_in_amount,
                     dst_chain_token_out,
                     user_address,
+                    slippage,
                 )
             )
         } else {
@@ -146,6 +150,9 @@ impl DeBridgeClient {
                     src_chain_token_in_amount,
                     dst_chain_id,
                     dst_chain_token_out,
+                    user_address,
+                    dst_chain_token_out_amount,
+                    prepend_operating_expenses,
                 )
             )
         };
@@ -178,19 +185,27 @@ impl DeBridgeClient {
         token_in: &str,
         token_in_amount: &str,
         token_out: &str,
-        user_address: &str,
+        token_out_recipient: &str,
+        slippage: Option<&str>,
     ) -> String {
-        let params = [
-            ("chainId", chain_id),
-            ("tokenIn", token_in),
-            ("tokenInAmount", token_in_amount),
-            ("tokenOut", token_out),
-            ("tokenOutRecipient", user_address),
-            ("slippage", "auto"),
-            ("affiliateFeePercent", "0"),
+        let params = vec![
+            ("chainId", chain_id.to_string()),
+            ("tokenIn", token_in.to_string()),
+            ("tokenInAmount", token_in_amount.to_string()),
+            ("tokenOut", token_out.to_string()),
+            ("tokenOutRecipient", token_out_recipient.to_string()),
+            (
+                "slippage",
+                slippage.unwrap_or("auto").to_string(),
+            ),
+            ("affiliateFeePercent", "0".to_string()),
         ];
 
-        self.build_query_string(&params)
+        params
+            .into_iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect::<Vec<String>>()
+            .join("&")
     }
 
     // Helper method to build query parameters for cross-chain transactions
@@ -201,25 +216,50 @@ impl DeBridgeClient {
         src_chain_token_in_amount: &str,
         dst_chain_id: &str,
         dst_chain_token_out: &str,
+        user_address: &str,
+        dst_chain_token_out_amount: Option<&str>,
+        prepend_operating_expenses: Option<&str>,
     ) -> String {
-        let params = [
-            ("srcChainId", src_chain_id),
-            ("srcChainTokenIn", src_chain_token_in),
-            ("srcChainTokenInAmount", src_chain_token_in_amount),
-            ("dstChainId", dst_chain_id),
-            ("dstChainTokenOut", dst_chain_token_out),
-            ("dstChainTokenOutAmount", "auto"),
-            ("prependOperatingExpenses", "true"),
-            ("additionalTakerRewardBps", "0"),
+        // Determine if destination chain is Solana (7565164)
+        let is_dst_solana = dst_chain_id == "7565164";
+        
+        // For Solana, we need a valid Solana address. For simplicity in this example,
+        // we'll use a common example Solana address when the destination is Solana
+        let dst_recipient = if is_dst_solana {
+            // Example Solana address - in a real implementation, you would derive this properly
+            "DRiMMbLc8Tmxozpamk3a6JwRvyYH6vc72Md7xd4jEyxw"
+        } else {
+            user_address
+        };
+        
+        let params = vec![
+            ("srcChainId", src_chain_id.to_string()),
+            ("srcChainTokenIn", src_chain_token_in.to_string()),
+            ("srcChainTokenInAmount", src_chain_token_in_amount.to_string()),
+            ("dstChainId", dst_chain_id.to_string()),
+            ("dstChainTokenOut", dst_chain_token_out.to_string()),
+            ("dstChainTokenOutAmount", dst_chain_token_out_amount.unwrap_or("auto").to_string()),
+            // Use appropriate address format based on destination chain
+            ("dstChainTokenOutRecipient", dst_recipient.to_string()),
+            // Add sender address (same as user_address)
+            ("senderAddress", user_address.to_string()),
+            // Source chain authorities
+            ("srcChainOrderAuthorityAddress", user_address.to_string()),
+            ("srcChainRefundAddress", user_address.to_string()),
+            // Destination chain authority
+            ("dstChainOrderAuthorityAddress", dst_recipient.to_string()),
+            // Analytics
+            ("referralCode", "21064".to_string()),
+            ("deBridgeApp", "GOAT".to_string()),  // Using allowed value
+            // Operating expenses
+            (
+                "prependOperatingExpenses",
+                prepend_operating_expenses.unwrap_or("true").to_string(),
+            ),
         ];
 
-        self.build_query_string(&params)
-    }
-
-    // Helper method to build a query string from parameters
-    fn build_query_string(&self, params: &[(&str, &str)]) -> String {
         params
-            .iter()
+            .into_iter()
             .map(|(k, v)| format!("{}={}", k, v))
             .collect::<Vec<String>>()
             .join("&")

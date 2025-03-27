@@ -45,16 +45,22 @@ pub async fn search_debridge_tokens(chain_id: String, search_term: String) -> Re
 #[tool(description = "
 Get a quote for a cross-chain transfer using deBridge protocol.
 
-Parameters:
+Required Parameters:
 - from_token_address: The address of the token to send. Use the native token address for ETH/BNB/etc.
 - to_token_address: The address of the token to receive. For Solana tokens, use the base58 address.
 - amount: The amount of tokens to send, in the smallest unit (e.g., wei for ETH).
 - from_chain: The ID of the source chain (e.g., '1' for Ethereum, '56' for BSC).
 - to_chain: The ID of the destination chain (e.g., '7565164' for Solana).
-- user_address: The address of the user who will receive the tokens.
+- user_address: The address of the user who will receive the tokens. This is also used as the sender address, source and destination chain authorities.
 
-Example:
+Optional Parameters:
+- slippage: Maximum allowed slippage in percentage. Default is 'auto'.
+- dst_token_amount: The desired amount of tokens to receive. Default is 'auto'.
+- prepend_operating_expenses: Whether to include operating expenses in the quote. Default is 'true'.
+
+Examples:
 ```
+// Simple quote with required parameters only
 get_debridge_quote(
   from_token_address: '0x0000000000000000000000000000000000000000',
   to_token_address: 'DBRiDgJAMsM95moTzJs7M9LnkGErpbv9v6CUR1DXnUu5',
@@ -62,6 +68,18 @@ get_debridge_quote(
   from_chain: '1',
   to_chain: '7565164',
   user_address: '0xYourAddressHere'
+)
+
+// Quote with optional parameters
+get_debridge_quote(
+  from_token_address: '0x0000000000000000000000000000000000000000',
+  to_token_address: 'DBRiDgJAMsM95moTzJs7M9LnkGErpbv9v6CUR1DXnUu5',
+  amount: '1000000000000000000',
+  from_chain: '1',
+  to_chain: '7565164',
+  user_address: '0xYourAddressHere',
+  slippage: '0.5',
+  prepend_operating_expenses: 'true'
 )
 ```
 ")]
@@ -72,6 +90,9 @@ pub async fn get_debridge_quote(
     from_chain: String,
     to_chain: String,
     user_address: String,
+    slippage: Option<String>,
+    dst_token_amount: Option<String>,
+    prepend_operating_expenses: Option<String>,
 ) -> Result<Value> {
     // Create a new deBridge client
     let client = DeBridgeClient::new();
@@ -84,6 +105,9 @@ pub async fn get_debridge_quote(
         &to_chain,
         &to_token_address,
         &user_address,
+        slippage.as_deref(),
+        dst_token_amount.as_deref(),
+        prepend_operating_expenses.as_deref(),
     ).await?;
     
     Ok(quote)

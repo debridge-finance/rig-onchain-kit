@@ -77,6 +77,9 @@ async fn main() -> Result<()> {
     
     // Test getting a quote (using example values)
     println!("\n=== Testing Quote API ===");
+    
+    // Basic quote example
+    println!("\n1. Basic Quote Example:");
     let src_chain_id = "1"; // Ethereum mainnet
     let src_token_address = "0x0000000000000000000000000000000000000000"; // ETH (native token)
     let amount = "10000000000000000"; // 0.01 ETH
@@ -88,36 +91,149 @@ async fn main() -> Result<()> {
     println!("  From chain: {} ({})", src_chain_id, src_token_address);
     println!("  To chain: {} ({})", dst_chain_id, dst_token_address);
     println!("  Amount: {} wei", amount);
-    println!("  Recipient: {}", address);
+    println!("  User Address: {}", address);
     
-    let quote = client.get_bridge_quote(
+    let basic_quote = client.get_bridge_quote(
         src_chain_id,
         src_token_address,
         amount,
         dst_chain_id,
         dst_token_address,
         address,
+        None,
+        None,
+        None,
     ).await?;
     
-    // Print a simplified version of the quote response
-    println!("\nQuote response (simplified summary):");
+    // Print a simplified version of the basic quote response
+    println!("\nBasic quote response (simplified summary):");
     
-    if let Some(src_chain_gas_fee) = quote.get("srcChainGasFee") {
+    if let Some(src_chain_gas_fee) = basic_quote.get("srcChainGasFee") {
         println!("Source chain gas fee: {}", src_chain_gas_fee);
     }
     
-    if let Some(dst_chain_gas_fee) = quote.get("dstChainGasFee") {
+    if let Some(dst_chain_gas_fee) = basic_quote.get("dstChainGasFee") {
         println!("Destination chain gas fee: {}", dst_chain_gas_fee);
     }
     
-    if let Some(estimation) = quote.get("estimation") {
+    if let Some(estimation) = basic_quote.get("estimation") {
         if let Some(dst_chain_token_out) = estimation.get("dstChainTokenOut") {
             println!("Estimated amount out: {}", dst_chain_token_out);
         }
     }
     
+    // Check for the tx data in the response
+    println!("\n=== Transaction Data in Basic Quote ===");
+    if let Some(tx) = basic_quote.get("tx") {
+        println!("Transaction data found!");
+        
+        // Check for data field in tx
+        if let Some(data) = tx.get("data") {
+            println!("Transaction data: {}", data);
+        } else {
+            println!("No data field in tx object");
+        }
+        
+        // Check for the method details
+        if let Some(method) = tx.get("method") {
+            println!("Transaction method: {}", method);
+        }
+        
+        // Print a summary of available tx fields
+        println!("\nAvailable transaction fields:");
+        for (key, _) in tx.as_object().unwrap() {
+            println!("- {}", key);
+        }
+    } else {
+        println!("No transaction data found in the response!");
+    }
+    
+    // Advanced quote with custom parameters
+    println!("\n2. Advanced Quote Example with Custom Parameters:");
+    
+    let advanced_quote = client.get_bridge_quote(
+        src_chain_id,
+        src_token_address,
+        amount,
+        dst_chain_id,
+        dst_token_address,
+        address,
+        Some("0.5"),                 // 0.5% slippage
+        None,                        // Auto determine destination token amount
+        Some("true"),                // Include operating expenses
+    ).await?;
+    
+    // Print a simplified version of the advanced quote response
+    println!("\nAdvanced quote response (simplified summary):");
+    
+    if let Some(src_chain_gas_fee) = advanced_quote.get("srcChainGasFee") {
+        println!("Source chain gas fee: {}", src_chain_gas_fee);
+    }
+    
+    if let Some(dst_chain_gas_fee) = advanced_quote.get("dstChainGasFee") {
+        println!("Destination chain gas fee: {}", dst_chain_gas_fee);
+    }
+    
+    if let Some(estimation) = advanced_quote.get("estimation") {
+        if let Some(dst_chain_token_out) = estimation.get("dstChainTokenOut") {
+            println!("Estimated amount out: {}", dst_chain_token_out);
+        }
+    }
+    
+    // Check for the tx data in the response
+    println!("\n=== Transaction Data in Advanced Quote ===");
+    if let Some(tx) = advanced_quote.get("tx") {
+        println!("Transaction data found!");
+        
+        // Check for data field in tx
+        if let Some(data) = tx.get("data") {
+            println!("Transaction data: {}", data);
+        } else {
+            println!("No data field in tx object");
+        }
+        
+        // Check for the method details
+        if let Some(method) = tx.get("method") {
+            println!("Transaction method: {}", method);
+        }
+        
+        // Print a summary of available tx fields
+        println!("\nAvailable transaction fields:");
+        for (key, _) in tx.as_object().unwrap() {
+            println!("- {}", key);
+        }
+    } else {
+        println!("No transaction data found in the response!");
+    }
+    
+    // Compare estimated amounts between basic and advanced quotes
+    println!("\n3. Comparison Between Basic and Advanced Quotes:");
+    
+    let basic_amount = basic_quote
+        .get("estimation")
+        .and_then(|e| e.get("dstChainTokenOut"))
+        .and_then(|t| t.get("amount"))
+        .and_then(|a| a.as_str())
+        .unwrap_or("0");
+    
+    let advanced_amount = advanced_quote
+        .get("estimation")
+        .and_then(|e| e.get("dstChainTokenOut"))
+        .and_then(|t| t.get("amount"))
+        .and_then(|a| a.as_str())
+        .unwrap_or("0");
+    
+    println!("Basic quote estimated amount: {}", basic_amount);
+    println!("Advanced quote estimated amount: {}", advanced_amount);
+    
+    if basic_amount != advanced_amount {
+        println!("Notice: The estimated amounts differ due to the custom parameters");
+    } else {
+        println!("The estimated amounts are the same despite different parameters");
+    }
+    
     println!("\n=== Tests Completed Successfully ===");
-    println!("The deBridge module is working correctly!");
+    println!("The deBridge module is working correctly with all parameters!");
     
     Ok(())
 }
